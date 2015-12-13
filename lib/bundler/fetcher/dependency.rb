@@ -28,11 +28,7 @@ module Bundler
           Bundler.ui.info ".", false
         end
 
-        if query_list.empty?
-          return last_spec_list.map do |args|
-            EndpointSpecification.new(*args)
-          end
-        end
+        return last_spec_list if query_list.empty?
 
         remote_specs = Bundler::Retry.new("dependency api", AUTH_ERRORS).attempts do
           dependency_specs(query_list)
