@@ -50,21 +50,18 @@ module Bundler
       def dependency_specs(gem_names)
         Bundler.ui.debug "Query Gemcutter Dependency Endpoint API: #{gem_names.join(",")}"
         gem_list = []
-        deps_list = []
 
         gem_names.each_slice(Source::Rubygems::API_REQUEST_SIZE) do |names|
           marshalled_deps = downloader.fetch(dependency_api_uri(names)).body
-          gem_list += Bundler.load_marshal(marshalled_deps)
+          gem_list.push(*Bundler.load_marshal(marshalled_deps))
         end
 
-        spec_list = gem_list.map do |s|
-          dependencies = s[:dependencies].map do |name, requirement|
-            dep = well_formed_dependency(name, requirement.split(", "))
-            deps_list << dep.name
-            dep
-          end
+        deps_list = []
+        spec_list = []
 
-          [s[:name], Gem::Version.new(s[:number]), s[:platform], dependencies]
+        gem_list.each do |s|
+          deps_list.push(*s[:dependencies].keys)
+          spec_list.push([s[:name], s[:number], s[:platform], s[:dependencies]])
         end
 
         [spec_list, deps_list]
@@ -76,17 +73,6 @@ module Bundler
         uri
       end
 
-      def well_formed_dependency(name, *requirements)
-        Gem::Dependency.new(name, *requirements)
-      rescue ArgumentError => e
-        illformed = 'Ill-formed requirement ["#<YAML::Syck::DefaultKey'
-        raise e unless e.message.include?(illformed)
-        puts # we shouldn't print the error message on the "fetching info" status line
-        raise GemspecError,
-          "Unfortunately, the gem #{s[:name]} (#{s[:number]}) has an invalid " \
-          "gemspec. \nPlease ask the gem author to yank the bad version to fix " \
-          "this issue. For more information, see http://bit.ly/syck-defaultkey."
-      end
     end
   end
 end
