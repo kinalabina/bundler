@@ -25,14 +25,14 @@ module Bundler
       bin_path = Bundler.which(@cmd)
       if bin_path
         Bundler.ui = nil
-        Kernel.exec(bin_path, *args)
+        Kernel.exec([bin_path, @cmd], *args)
       end
 
       # If that didn't work, set up the whole bundle
       Bundler.definition.validate_ruby!
       Bundler.load.setup_environment
       Bundler.ui = nil
-      Kernel.exec(@cmd, *args)
+      Kernel.exec([@cmd, @cmd], *args)
     rescue Errno::EACCES, Errno::ENOEXEC
       Bundler.ui = ui
       Bundler.ui.error "bundler: not executable: #{cmd}"
